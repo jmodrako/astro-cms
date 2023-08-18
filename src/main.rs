@@ -1,12 +1,17 @@
-use std::sync::{Arc, Mutex};
 use anyhow::Context;
 use askama::Template;
-use axum::{http::StatusCode, response::{Html, IntoResponse, Response}, routing::{get, post}, Router, Form};
 use axum::extract::State;
+use axum::{
+    http::StatusCode,
+    response::{Html, IntoResponse, Response},
+    routing::{get, post},
+    Form, Router,
+};
 use serde::Deserialize;
+use std::sync::{Arc, Mutex};
+use tower_http::services::ServeDir;
 use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-use tower_http::services::ServeDir;
 
 #[derive(Clone)]
 struct AppState {
@@ -26,7 +31,7 @@ async fn main() -> anyhow::Result<()> {
     info!("initializing router...");
 
     let app_state = AppState {
-        todos: Arc::new(Mutex::new(vec![]))
+        todos: Arc::new(Mutex::new(vec![])),
     };
 
     // We could also read our port in from the environment as well
@@ -109,7 +114,9 @@ struct TodoRequest {
 struct HtmlTemplate<T>(T);
 
 /// Allows us to convert Askama HTML templates into valid HTML for axum to serve in the response.
-impl<T> IntoResponse for HtmlTemplate<T> where T: Template
+impl<T> IntoResponse for HtmlTemplate<T>
+where
+    T: Template,
 {
     fn into_response(self) -> Response {
         // Attempt to render the template with askama
@@ -120,7 +127,8 @@ impl<T> IntoResponse for HtmlTemplate<T> where T: Template
             Err(err) => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 format!("Failed to render template. Error: {}", err),
-            ).into_response(),
+            )
+                .into_response(),
         }
     }
 }
